@@ -16,7 +16,10 @@ public abstract  class UserEntity {
     private String email;
 
     @Column(nullable=false)
-    private String userName;
+    private String firstName;
+
+    @Column(nullable=false)
+    private String lastName;
 
     @Column(nullable=false)
     private String password;
@@ -30,15 +33,21 @@ public abstract  class UserEntity {
 
 //    parameterized construction
 
-    public UserEntity(String email, String userName, String password, UserRole role) {
+    public UserEntity(String email, String firstName,String lastName ,String password, UserRole role) {
 
     setEmail(email);
-    setUserName(userName);
+    setFirstName(firstName);
+    setLastName(lastName);
     setPassword(password);
     setRole(role);
     registrationDate=LocalDateTime.now();
     }
 
+    public UserEntity(){}
+
+    public void userAction(){
+        System.out.println("user specific action");
+    }
 
     public String getEmail() {
         return email;
@@ -51,16 +60,20 @@ public abstract  class UserEntity {
         this.email = email;
     }
 
-    public String getUserName() {
-        return userName;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setUserName(String userName) {
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
 
-        if(userName==null || userName.trim().isEmpty()){
-            throw new IllegalArgumentException("Username cannot be null");
-        }
-        this.userName = userName;
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getPassword() {
