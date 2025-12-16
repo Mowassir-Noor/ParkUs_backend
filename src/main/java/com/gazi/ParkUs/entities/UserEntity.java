@@ -54,7 +54,7 @@ public abstract  class UserEntity {
     }
 
     public void setEmail(String email) {
-        if(email==null || !email.contains("@")){
+        if(email==null ){
             throw new IllegalArgumentException("Email cannot be null");
         }
         this.email = email;

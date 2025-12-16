@@ -1,6 +1,7 @@
 package com.gazi.ParkUs.services;
 
 import com.gazi.ParkUs.Exceptions.UserAlreadyExists;
+import com.gazi.ParkUs.dto.LoginUserDto;
 import com.gazi.ParkUs.dto.RegisterUserDto;
 import com.gazi.ParkUs.dto.UserResponseDto;
 import com.gazi.ParkUs.entities.RegularUser;
@@ -42,6 +43,18 @@ public UserResponseDto register(RegisterUserDto dto){
       return new UserResponseDto(user.getFirstName(),user.getLastName(),user.getEmail(),user.getRole(),user.getRegistrationDate());
 
     }
+}
+
+public UserResponseDto login(LoginUserDto dto){
+     Optional<UserEntity> existingUser=userRepository.findByEmail(dto.getEmail());
+
+     if(existingUser.isEmpty() || !passwordEncoder.matches(dto.getPassword(),existingUser.get().getPassword())){
+         throw new IllegalArgumentException("Invalid username or password");
+
+
+     }
+     UserEntity user=existingUser.get();
+     return new UserResponseDto(user.getFirstName(),user.getLastName(),user.getEmail(),user.getRole(),user.getRegistrationDate());
 }
 
 

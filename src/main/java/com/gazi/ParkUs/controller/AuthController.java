@@ -1,5 +1,6 @@
 package com.gazi.ParkUs.controller;
 
+import com.gazi.ParkUs.dto.LoginUserDto;
 import com.gazi.ParkUs.dto.RegisterUserDto;
 import com.gazi.ParkUs.dto.UserResponseDto;
 import com.gazi.ParkUs.services.AuthService;
@@ -29,5 +30,16 @@ public class AuthController {
                 System.out.println(e.getMessage());
                 return ResponseEntity.badRequest().build();
             }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<UserResponseDto> register(@Valid @RequestBody LoginUserDto dto){
+        try{
+            UserResponseDto response =authService.login(dto);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
