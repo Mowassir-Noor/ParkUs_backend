@@ -10,10 +10,12 @@ import jakarta.persistence.Entity;
 public class RegularUser extends UserEntity{
 
 
-    public RegularUser(String firstName,String lastName,String email, String password) {
+    public RegularUser(String firstName,
+                       String lastName,
+                       String email,
+                       String password) {
 
-        super(firstName,lastName, email,password,UserRole.ROLE_USER);
-
+        super(email, firstName, lastName, password, UserRole.ROLE_USER);
     }
 
     public RegularUser() {}

@@ -1,4 +1,4 @@
-package com.gazi.ParkUs.Config;
+package com.gazi.ParkUs.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
