@@ -45,6 +45,8 @@ public UserResponseDto register(RegisterUserDto dto){
     }
 }
 
+
+
 public UserResponseDto login(LoginUserDto dto){
      Optional<UserEntity> existingUser=userRepository.findByEmail(dto.getEmail());
 
@@ -56,6 +58,18 @@ public UserResponseDto login(LoginUserDto dto){
      UserEntity user=existingUser.get();
      return new UserResponseDto(user.getFirstName(),user.getLastName(),user.getEmail(),user.getRole(),user.getRegistrationDate());
 }
+
+
+
+
+//public UserResponseDto updateUser(Long userId, UserDto dto){
+//
+//        if(userRepository.existsById(userId)){
+//            UserEntity user=userRepository.findById(userId).get();
+//
+//            if()
+//        }
+//}
 
 
 }

@@ -105,6 +105,9 @@ public abstract  class UserEntity {
         this.role = role;
     }
 
+    public Long getUserId() {
+        return id;
+    }
     public LocalDateTime getRegistrationDate() {
         return registrationDate;
     }

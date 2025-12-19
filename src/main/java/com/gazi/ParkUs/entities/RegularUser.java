@@ -24,4 +24,6 @@ public class RegularUser extends UserEntity{
     public void userAction(){
         System.out.println("RegularUser");
     }
+
+
 }

@@ -1,3 +1,11 @@
+
+--  used this query to change the ids from int to bigint in every table
+-- ALTER TABLE booking
+-- ALTER COLUMN availability_id TYPE BIGINT;
+
+
+
+
 -- Users (both spot owners and renters)
 CREATE TABLE Users (
                        user_id SERIAL PRIMARY KEY,
@@ -54,3 +62,33 @@ CREATE TABLE SpotRating (
                             comment TEXT,
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+
+
+
+CREATE TABLE BookingLog (
+                            log_id SERIAL PRIMARY KEY,
+
+                            booking_id INT NOT NULL,
+                            spot_id INT NOT NULL,
+                            owner_id INT NOT NULL,
+                            renter_id INT NOT NULL,
+
+                            start_time TIMESTAMP NOT NULL,
+                            end_time TIMESTAMP NOT NULL,
+
+                            duration_hours NUMERIC(5,2) NOT NULL,
+                            total_amount NUMERIC(10,2) NOT NULL,
+
+                            booking_status VARCHAR(20),
+
+                            logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
