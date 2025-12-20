@@ -15,6 +15,8 @@ import java.util.Optional;
 @Repository
 public interface SpotAvailabilityRepository extends JpaRepository<SpotAvailability, Long> {
 
+    List<SpotAvailability> findBySpot_SpotId(Long spotId);
+    
     List<SpotAvailability> findBySpot_SpotIdAndIsBookedFalse(Long spotId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

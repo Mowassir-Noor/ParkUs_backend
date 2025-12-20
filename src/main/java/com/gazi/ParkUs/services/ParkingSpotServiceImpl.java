@@ -5,13 +5,11 @@ import com.gazi.ParkUs.dto.ParkingSpotResponseDto;
 import com.gazi.ParkUs.entities.ParkingSpot;
 import com.gazi.ParkUs.entities.RegularUser;
 import com.gazi.ParkUs.entities.UserEntity;
+import com.gazi.ParkUs.exceptions.ResourceNotFoundException;
 import com.gazi.ParkUs.repositories.ParkingSpotRepository;
 import com.gazi.ParkUs.repositories.UserRepository;
 import com.gazi.ParkUs.security.SecurityUtils;
-import com.gazi.ParkUs.services.ParkingSpotService;
 import jakarta.transaction.Transactional;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.AccessDeniedException;
@@ -29,10 +27,10 @@ public class ParkingSpotServiceImpl implements ParkingSpotService {
         this.userRepo = userRepo;
     }
 
-    // CREATE (no owner check)
     @Override
     public ParkingSpotResponseDto createSpot(ParkingSpotRequestDto dto) {
-        UserEntity currentUser=userRepo.findByEmail(SecurityUtils.currentUserEmail()).orElseThrow(()->new RuntimeException("user not found"));
+        UserEntity currentUser = userRepo.findByEmail(SecurityUtils.currentUserEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
 
 
@@ -43,16 +41,11 @@ public class ParkingSpotServiceImpl implements ParkingSpotService {
         return toResponse(spotRepo.save(spot));
     }
 
-    // READ
     @Override
     public ParkingSpotResponseDto getSpotById(Long id) {
         return toResponse(findSpot(id));
     }
-    private UserEntity getCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return userRepo.findByEmail(auth.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
+
     @Override
     public List<ParkingSpotResponseDto> getAllSpots() {
         return spotRepo.findAll()
@@ -69,13 +62,13 @@ public class ParkingSpotServiceImpl implements ParkingSpotService {
                 .toList();
     }
 
-    // UPDATE (owner only)
     @Override
     public ParkingSpotResponseDto updateSpot(Long spotId, ParkingSpotRequestDto dto)
             throws AccessDeniedException {
 
         ParkingSpot spot = findSpot(spotId);
-       UserEntity currentUser=userRepo.findByEmail(SecurityUtils.currentUserEmail()).orElseThrow(()->new RuntimeException("user not found"));
+        UserEntity currentUser = userRepo.findByEmail(SecurityUtils.currentUserEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
 
         assertOwner(spot, currentUser);
@@ -84,12 +77,11 @@ public class ParkingSpotServiceImpl implements ParkingSpotService {
         return toResponse(spotRepo.save(spot));
     }
 
-    // DELETE (owner only)
     @Override
     public void deleteSpot(Long spotId) throws AccessDeniedException {
-
         ParkingSpot spot = findSpot(spotId);
-        UserEntity currentUser=userRepo.findByEmail(SecurityUtils.currentUserEmail()).orElseThrow(()->new RuntimeException("user not found"));
+        UserEntity currentUser = userRepo.findByEmail(SecurityUtils.currentUserEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
 
         assertOwner(spot, currentUser);
@@ -101,7 +93,7 @@ public class ParkingSpotServiceImpl implements ParkingSpotService {
 
     private ParkingSpot findSpot(Long id) {
         return spotRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Parking spot not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Parking spot not found"));
     }
 
     private void assertOwner(ParkingSpot spot, UserEntity user)

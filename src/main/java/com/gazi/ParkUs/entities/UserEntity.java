@@ -4,49 +4,50 @@ import com.gazi.ParkUs.User.UserRole;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.util.regex.Pattern;
 
 @Entity
 @Table(name = "users")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "user_type")
-public abstract  class UserEntity {
+public abstract class UserEntity {
+    
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    );
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(unique = true,name="user_id",nullable = false)
-    private Long id;
+    @Column(unique = true, name = "user_id", nullable = false)
+    private Long userId;
 
-    @Column(name="email",nullable = false, unique =true)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name="first_name", nullable=false)
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(name="last_name",nullable=false)
+    @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Column(name="password_hash",nullable=false)
+    @Column(name = "password_hash", nullable = false)
     private String password;
 
-
     @Enumerated(EnumType.STRING)
-    @Column(name="role",nullable=false)
+    @Column(name = "role", nullable = false)
     private UserRole role;
 
-    @Column(name="created_at",nullable=false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime registrationDate;
 
-
-//    parameterized construction
-
-    public UserEntity(String email, String firstName,String lastName ,String password, UserRole role) {
-
-    setEmail(email);
-    setFirstName(firstName);
-    setLastName(lastName);
-    setPassword(password);
-    setRole(role);
-    registrationDate=LocalDateTime.now();
+    // Parameterized constructor
+    public UserEntity(String email, String firstName, String lastName, String password, UserRole role) {
+        setEmail(email);
+        setFirstName(firstName);
+        setLastName(lastName);
+        this.password = password; // Password already validated and hashed
+        setRole(role);
+        this.registrationDate = LocalDateTime.now();
     }
 
     public UserEntity(){}
@@ -60,8 +61,11 @@ public abstract  class UserEntity {
     }
 
     public void setEmail(String email) {
-        if(email==null ){
-            throw new IllegalArgumentException("Email cannot be null");
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
+        }
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            throw new IllegalArgumentException("Invalid email format");
         }
         this.email = email;
     }
@@ -71,6 +75,9 @@ public abstract  class UserEntity {
     }
 
     public void setFirstName(String firstName) {
+        if (firstName == null || firstName.trim().isEmpty()) {
+            throw new IllegalArgumentException("First name cannot be null or empty");
+        }
         this.firstName = firstName;
     }
 
@@ -79,6 +86,9 @@ public abstract  class UserEntity {
     }
 
     public void setLastName(String lastName) {
+        if (lastName == null || lastName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Last name cannot be null or empty");
+        }
         this.lastName = lastName;
     }
 
@@ -87,8 +97,9 @@ public abstract  class UserEntity {
     }
 
     public void setPassword(String password) {
-        if(password==null || password.length()<8){
-            throw new IllegalArgumentException("Password must be atleast 8 characters");
+        // Password is already validated in DTO and hashed before reaching entity
+        if (password == null || password.isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty");
         }
         this.password = password;
     }
@@ -106,7 +117,7 @@ public abstract  class UserEntity {
     }
 
     public Long getUserId() {
-        return id;
+        return userId;
     }
     public LocalDateTime getRegistrationDate() {
         return registrationDate;
