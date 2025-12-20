@@ -1,11 +1,16 @@
 package com.gazi.ParkUs.config;
 
+import com.gazi.ParkUs.entities.UserEntity;
+import com.gazi.ParkUs.repositories.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -51,4 +56,19 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+
+//    @Bean
+//    public UserDetailsService userDetailsService(UserRepository repo) {
+//        return email -> {
+//            UserEntity user = repo.findByEmail(email)
+//                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+//
+//            return User.withUsername(user.getEmail())
+//                    .password(user.getPassword())
+//
+//                    .build();
+//        };
+//    }
+
 }

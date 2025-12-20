@@ -115,4 +115,7 @@ public abstract  class UserEntity {
     public void setRegistrationDate(LocalDateTime registrationDate) {
         this.registrationDate = registrationDate;
     }
+
+
+
 }

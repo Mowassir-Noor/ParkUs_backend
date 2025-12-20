@@ -14,6 +14,10 @@ public interface ParkingSpotRepository extends JpaRepository<ParkingSpot, Long> 
 
     List<ParkingSpot> findByOwner_UserId(Long ownerId);
 
+    boolean existsByOwner_UserId(Long ownerId);
+
+
+
     @Query("""
         SELECT p FROM ParkingSpot p
         WHERE p.latitude BETWEEN :latMin AND :latMax
