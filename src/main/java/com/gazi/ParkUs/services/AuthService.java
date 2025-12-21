@@ -45,7 +45,7 @@ public class AuthService {
         UserEntity user = new RegularUser(dto.getFirstName(), dto.getLastName(), dto.getEmail(), encodedPassword);
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().toString());
+        String token = jwtUtil.generateToken(user);
 
         return new AuthResponseDto(
                 token,
@@ -65,7 +65,7 @@ public class AuthService {
         UserEntity user = userRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().toString());
+        String token = jwtUtil.generateToken(user);
 
         return new AuthResponseDto(
                 token,

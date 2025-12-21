@@ -1,5 +1,6 @@
 package com.gazi.ParkUs.security;
 
+import com.gazi.ParkUs.entities.UserEntity;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -42,6 +43,32 @@ public class JwtUtil {
         return extractClaim(token, Claims::getSubject);
     }
 
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> {
+            Object userId = claims.get("userId");
+            if (userId instanceof Number) {
+                return ((Number) userId).longValue();
+            }
+            return null;
+        });
+    }
+
+    public String extractFirstName(String token) {
+        return extractClaim(token, claims -> (String) claims.get("firstName"));
+    }
+
+    public String extractLastName(String token) {
+        return extractClaim(token, claims -> (String) claims.get("lastName"));
+    }
+
+    public String extractEmail(String token) {
+        return extractClaim(token, claims -> (String) claims.get("email"));
+    }
+
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> (String) claims.get("role"));
+    }
+
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
@@ -61,6 +88,17 @@ public class JwtUtil {
 
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
+    }
+
+    public String generateToken(UserEntity user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getUserId());
+        claims.put("email", user.getEmail());
+        claims.put("firstName", user.getFirstName());
+        claims.put("lastName", user.getLastName());
+        claims.put("role", user.getRole().toString());
+        claims.put("registrationDate", user.getRegistrationDate().toString());
+        return createToken(claims, user.getEmail());
     }
 
     public String generateToken(String username, String role) {
