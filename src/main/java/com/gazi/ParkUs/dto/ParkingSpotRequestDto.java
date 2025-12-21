@@ -36,4 +36,7 @@ public class ParkingSpotRequestDto {
     @NotNull(message = "Price per hour is required")
     @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
     private BigDecimal pricePerHour;
+
+    // Optional: Used by admin to create/modify spots for other users
+    private Long ownerId;
 }
