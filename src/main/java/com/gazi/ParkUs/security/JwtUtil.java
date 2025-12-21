@@ -2,13 +2,14 @@ package com.gazi.ParkUs.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,8 +24,18 @@ public class JwtUtil {
     @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds
     private Long expiration;
 
+    private byte[] secretBytes;
+
+    @PostConstruct
+    public void validateSecret() {
+        secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < 32) { // 256 bits
+            throw new IllegalStateException("JWT secret must be at least 256 bits");
+        }
+    }
+
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        return Keys.hmacShaKeyFor(secretBytes);
     }
 
     public String extractUsername(String token) {

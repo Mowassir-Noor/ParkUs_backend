@@ -1,5 +1,6 @@
 package com.gazi.ParkUs.services;
 
+import com.gazi.ParkUs.User.UserRole;
 import com.gazi.ParkUs.dto.BookingRequestDto;
 import com.gazi.ParkUs.dto.BookingResponseDto;
 import com.gazi.ParkUs.entities.*;
@@ -46,13 +47,13 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new UnauthorizedException("User not authenticated"));
 
         // Verify the authenticated user is the renter
-        if (!authenticatedUser.getUserId().equals(dto.getRenterId())) {
+        if (!isAdmin(authenticatedUser) && !authenticatedUser.getUserId().equals(dto.getRenterId())) {
             throw new UnauthorizedException("You can only create bookings for yourself");
         }
 
         // Lock the availability row to prevent race conditions
-        SpotAvailability availability = availabilityRepo.findById(dto.getAvailabilityId())
-                .orElseThrow(() -> new ResourceNotFoundException("Availability not found"));
+        SpotAvailability availability = availabilityRepo.lockById(dto.getAvailabilityId())
+            .orElseThrow(() -> new ResourceNotFoundException("Availability not found"));
 
         // Check if already booked (with lock)
         if (Boolean.TRUE.equals(availability.getIsBooked())) {
@@ -117,7 +118,7 @@ public class BookingServiceImpl implements BookingService {
         boolean isRenter = booking.getRenter().getUserId().equals(authenticatedUser.getUserId());
         boolean isOwner = booking.getSpot().getOwner().getUserId().equals(authenticatedUser.getUserId());
 
-        if (!isRenter && !isOwner) {
+        if (!isAdmin(authenticatedUser) && !isRenter && !isOwner) {
             throw new UnauthorizedException("You don't have permission to view this booking");
         }
 
@@ -131,7 +132,7 @@ public class BookingServiceImpl implements BookingService {
         UserEntity authenticatedUser = userRepo.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new UnauthorizedException("User not authenticated"));
 
-        if (!authenticatedUser.getUserId().equals(renterId)) {
+        if (!isAdmin(authenticatedUser) && !authenticatedUser.getUserId().equals(renterId)) {
             throw new UnauthorizedException("You can only view your own bookings");
         }
 
@@ -148,7 +149,7 @@ public class BookingServiceImpl implements BookingService {
         UserEntity authenticatedUser = userRepo.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new UnauthorizedException("User not authenticated"));
 
-        if (!authenticatedUser.getUserId().equals(ownerId)) {
+        if (!isAdmin(authenticatedUser) && !authenticatedUser.getUserId().equals(ownerId)) {
             throw new UnauthorizedException("You can only view bookings for your own spots");
         }
 
@@ -168,19 +169,36 @@ public class BookingServiceImpl implements BookingService {
         UserEntity authenticatedUser = userRepo.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new UnauthorizedException("User not authenticated"));
 
-        if (!booking.getSpot().getOwner().getUserId().equals(authenticatedUser.getUserId())) {
+        if (!isAdmin(authenticatedUser) && !booking.getSpot().getOwner().getUserId().equals(authenticatedUser.getUserId())) {
             throw new UnauthorizedException("Only the spot owner can update booking status");
         }
 
-        // Validate status
+        String newStatus = status.toLowerCase();
         List<String> validStatuses = List.of("pending", "confirmed", "cancelled", "completed");
-        if (!validStatuses.contains(status.toLowerCase())) {
+        if (!validStatuses.contains(newStatus)) {
             throw new InvalidRequestException("Invalid status. Must be one of: " + String.join(", ", validStatuses));
         }
 
-        booking.setStatus(status);
-        bookingRepo.save(booking);
+        String currentStatus = booking.getStatus().toLowerCase();
+        boolean allowed = switch (currentStatus) {
+            case "pending" -> List.of("confirmed", "cancelled").contains(newStatus);
+            case "confirmed" -> List.of("completed", "cancelled").contains(newStatus);
+            default -> false; // completed/cancelled are terminal
+        };
 
+        if (!allowed) {
+            throw new InvalidRequestException("Invalid transition from " + currentStatus + " to " + newStatus);
+        }
+
+        booking.setStatus(newStatus);
+
+        // If cancelled, free the slot
+        if ("cancelled".equals(newStatus) && Boolean.TRUE.equals(booking.getAvailability().getIsBooked())) {
+            booking.getAvailability().setIsBooked(false);
+            availabilityRepo.save(booking.getAvailability());
+        }
+
+        bookingRepo.save(booking);
         log(booking);
     }
 
@@ -189,23 +207,39 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepo.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
-        // Verify authorization - only renter can delete their booking
+        // Verify authorization - only renter can cancel their booking
         String currentUserEmail = SecurityUtils.currentUserEmail();
         UserEntity authenticatedUser = userRepo.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new UnauthorizedException("User not authenticated"));
 
-        if (!booking.getRenter().getUserId().equals(authenticatedUser.getUserId())) {
-            throw new UnauthorizedException("You can only delete your own bookings");
+        boolean isAdmin = isAdmin(authenticatedUser);
+        if (!isAdmin && !booking.getRenter().getUserId().equals(authenticatedUser.getUserId())) {
+            throw new UnauthorizedException("You can only cancel your own bookings");
         }
 
-        // Free up the availability
-        SpotAvailability availability = booking.getAvailability();
-        availability.setIsBooked(false);
-        availabilityRepo.save(availability);
+        if (!isAdmin) {
+            LocalDateTime now = LocalDateTime.now();
+            boolean hasStarted = !booking.getAvailability().getStartTime().isAfter(now);
+            if (hasStarted) {
+                throw new InvalidRequestException("Cannot cancel a booking that has started or finished");
+            }
 
-        bookingRepo.delete(booking);
+            String currentStatus = booking.getStatus().toLowerCase();
+            if (!List.of("pending", "confirmed").contains(currentStatus)) {
+                throw new InvalidRequestException("Only pending or confirmed bookings can be cancelled");
+            }
+        }
 
+        booking.setStatus("cancelled");
+        booking.getAvailability().setIsBooked(false);
+
+        availabilityRepo.save(booking.getAvailability());
+        bookingRepo.save(booking);
         log(booking);
+    }
+
+    private boolean isAdmin(UserEntity user) {
+        return user.getRole() == UserRole.ROLE_ADMIN;
     }
 
     // ------------------------

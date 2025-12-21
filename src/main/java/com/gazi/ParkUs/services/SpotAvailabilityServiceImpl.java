@@ -1,5 +1,6 @@
 package com.gazi.ParkUs.services;
 
+import com.gazi.ParkUs.User.UserRole;
 import com.gazi.ParkUs.dto.SpotAvailabilityRequestDto;
 import com.gazi.ParkUs.dto.SpotAvailabilityResponseDto;
 import com.gazi.ParkUs.entities.ParkingSpot;
@@ -48,7 +49,7 @@ public class SpotAvailabilityServiceImpl implements SpotAvailabilityService {
                 .orElseThrow(() -> new ResourceNotFoundException("Parking spot not found"));
 
         // Verify user owns the spot
-        if (!spot.getOwner().getUserId().equals(authenticatedUser.getUserId())) {
+        if (!isAdmin(authenticatedUser) && !spot.getOwner().getUserId().equals(authenticatedUser.getUserId())) {
             throw new UnauthorizedException("You can only create availability for your own spots");
         }
 
@@ -61,12 +62,9 @@ public class SpotAvailabilityServiceImpl implements SpotAvailabilityService {
             throw new InvalidRequestException("Start time must be in the future");
         }
 
-        // Check for overlapping availability
-        List<SpotAvailability> overlapping = availabilityRepo.findBySpot_SpotId(dto.getSpotId())
-                .stream()
-                .filter(a -> isOverlapping(a, dto.getStartTime(), dto.getEndTime()))
-                .toList();
-
+        // Check for overlapping availability using a locked query to avoid races
+        List<SpotAvailability> overlapping = availabilityRepo.findOverlapping(
+            dto.getSpotId(), dto.getStartTime(), dto.getEndTime());
         if (!overlapping.isEmpty()) {
             throw new InvalidRequestException("This time slot overlaps with existing availability");
         }
@@ -127,7 +125,7 @@ public class SpotAvailabilityServiceImpl implements SpotAvailabilityService {
                 .orElseThrow(() -> new UnauthorizedException("User not authenticated"));
 
         // Verify user owns the spot
-        if (!availability.getSpot().getOwner().getUserId().equals(authenticatedUser.getUserId())) {
+        if (!isAdmin(authenticatedUser) && !availability.getSpot().getOwner().getUserId().equals(authenticatedUser.getUserId())) {
             throw new UnauthorizedException("You can only delete availability for your own spots");
         }
 
@@ -139,12 +137,6 @@ public class SpotAvailabilityServiceImpl implements SpotAvailabilityService {
         availabilityRepo.delete(availability);
     }
 
-    // Helper methods
-    private boolean isOverlapping(SpotAvailability existing, LocalDateTime newStart, LocalDateTime newEnd) {
-        // Check if time ranges overlap
-        return !(newEnd.isBefore(existing.getStartTime()) || newStart.isAfter(existing.getEndTime()));
-    }
-
     private SpotAvailabilityResponseDto toDto(SpotAvailability availability) {
         SpotAvailabilityResponseDto dto = new SpotAvailabilityResponseDto();
         dto.setAvailabilityId(availability.getAvailabilityId());
@@ -153,5 +145,9 @@ public class SpotAvailabilityServiceImpl implements SpotAvailabilityService {
         dto.setEndTime(availability.getEndTime());
         dto.setIsBooked(availability.getIsBooked());
         return dto;
+    }
+
+    private boolean isAdmin(UserEntity user) {
+        return user.getRole() == UserRole.ROLE_ADMIN;
     }
 }

@@ -1,5 +1,6 @@
 package com.gazi.ParkUs.services;
 
+import com.gazi.ParkUs.User.UserRole;
 import com.gazi.ParkUs.dto.ParkingSpotRequestDto;
 import com.gazi.ParkUs.dto.ParkingSpotResponseDto;
 import com.gazi.ParkUs.entities.ParkingSpot;
@@ -99,7 +100,7 @@ public class ParkingSpotServiceImpl implements ParkingSpotService {
     private void assertOwner(ParkingSpot spot, UserEntity user)
             throws AccessDeniedException {
 
-        if (!spot.getOwner().getUserId().equals(user.getUserId())) {
+        if (!isAdmin(user) && !spot.getOwner().getUserId().equals(user.getUserId())) {
             throw new AccessDeniedException("You do not own this parking spot");
         }
     }
@@ -126,5 +127,9 @@ public class ParkingSpotServiceImpl implements ParkingSpotService {
         dto.setPricePerHour(spot.getPricePerHour());
         dto.setOwnerId(spot.getOwner().getUserId());
         return dto;
+    }
+
+    private boolean isAdmin(UserEntity user) {
+        return user.getRole() == UserRole.ROLE_ADMIN;
     }
 }

@@ -1,5 +1,13 @@
 # ParkUs - Parking Rental Platform
 
+## Latest Changes (2025-12-21)
+
+- Admin list endpoints now support pagination and default sorting (users by registrationDate desc, bookings by bookedAt desc, spots by createdAt desc, availability by startTime asc).
+- JWT filter now returns 401 immediately on invalid tokens instead of silently continuing.
+- JWT secret length validated at startup (minimum 256 bits); uses validated bytes for signing.
+- Removed DB_URL logging from env loader to avoid leaking credentials.
+- Generic 500 responses are now generic; full stack traces are logged server-side only.
+
 ## Recent Improvements & Fixes
 
 All critical issues have been resolved. Here's a comprehensive summary of the changes:

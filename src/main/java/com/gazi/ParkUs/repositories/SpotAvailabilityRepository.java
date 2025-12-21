@@ -26,15 +26,16 @@ public interface SpotAvailabilityRepository extends JpaRepository<SpotAvailabili
     """)
     Optional<SpotAvailability> lockById(@Param("id") Long id);
 
-    @Query("""
+        @Lock(LockModeType.PESSIMISTIC_WRITE)
+        @Query("""
         SELECT a FROM SpotAvailability a
         WHERE a.spot.spotId = :spotId
           AND a.startTime < :endTime
           AND a.endTime > :startTime
-    """)
-    List<SpotAvailability> findOverlapping(
+        """)
+        List<SpotAvailability> findOverlapping(
             @Param("spotId") Long spotId,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
-    );
+        );
 }

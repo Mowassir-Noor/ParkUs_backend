@@ -1,5 +1,12 @@
 # ParkUs API Reference
 
+## Conventions
+- Auth header: `Authorization: Bearer <token>`
+- Pagination: `page` (0-based), `size` (default 20), `sort=field,dir`
+- Time: ISO 8601 `YYYY-MM-DDTHH:mm:ss`
+- IDs: Long (BIGINT)
+- Invalid JWTs return 401 immediately
+
 ## Authentication Endpoints
 
 ### Register User
@@ -247,6 +254,11 @@ Authorization: Bearer <token>
 Response 204 No Content
 
 Valid statuses: pending, confirmed, cancelled, completed
+Allowed transitions:
+- pending -> confirmed | cancelled
+- confirmed -> completed | cancelled
+- completed/cancelled are terminal
+Who can update: spot owner or admin (admin overrides ownership)
 ```
 
 ### Delete Booking
@@ -255,6 +267,59 @@ DELETE /api/bookings/{id}
 Authorization: Bearer <token>
 
 Response 204 No Content
+
+Rules:
+- Renter can cancel only if booking is pending/confirmed and not started
+- Admin can cancel any booking
+- Cancelling frees the linked availability slot
+```
+
+---
+
+## Admin Endpoints (ROLE_ADMIN)
+
+All admin lists support paging: `page`, `size`, `sort`. Defaults:
+- Users: sort=registrationDate,DESC
+- Bookings: sort=bookedAt,DESC
+- Spots: sort=createdAt,DESC
+- Availability: sort=startTime,ASC
+
+### List Users
+```http
+GET /admin/users
+Authorization: Bearer <token>
+```
+
+### List Bookings
+```http
+GET /admin/bookings
+Authorization: Bearer <token>
+```
+
+### Update Booking Status (admin override)
+```http
+PATCH /admin/bookings/{id}/status?status=cancelled
+Authorization: Bearer <token>
+Response 204
+```
+
+### Cancel Booking (admin override)
+```http
+DELETE /admin/bookings/{id}
+Authorization: Bearer <token>
+Response 204
+```
+
+### List Spots
+```http
+GET /admin/spots
+Authorization: Bearer <token>
+```
+
+### List Availability
+```http
+GET /admin/availability
+Authorization: Bearer <token>
 ```
 
 ---
@@ -279,6 +344,14 @@ Response 204 No Content
   "status": 401,
   "message": "Invalid email or password",
   "timestamp": "2025-12-21T10:00:00"
+}
+```
+
+### 401 Invalid Token
+```json
+{
+  "status": 401,
+  "message": "Invalid token"
 }
 ```
 
@@ -309,6 +382,14 @@ Response 204 No Content
 }
 ```
 
+### 500 Internal Server Error
+```json
+{
+  "status": 500,
+  "message": "An unexpected error occurred"
+}
+```
+
 ---
 
 ## Common Validation Rules
@@ -330,12 +411,15 @@ Response 204 No Content
 ### Availability
 - Start time: Required, must be in future
 - End time: Required, must be after start time
-- Cannot overlap with existing availability
+- Cannot overlap with existing availability (server-enforced lock)
+- Cannot delete if already booked
 
 ### Booking
 - Can only book your own renterId
 - Cannot book past time slots
 - Slot must not be already booked
+- Status transitions restricted (see booking section)
+- Cancelling frees the availability slot
 
 ---
 
@@ -344,17 +428,20 @@ Response 204 No Content
 ### Parking Spots
 - Anyone can view all spots
 - Only owner can update/delete their spots
+- Admin can manage any spot
 
 ### Availability
 - Only spot owner can create/delete availability
 - Anyone can view availability
+- Admin can manage any availability
 
 ### Bookings
 - Users can only create bookings for themselves
 - Users can view their own bookings
 - Owners can view bookings on their spots
-- Only owners can update booking status
-- Only renters can delete their bookings
+- Owners can update booking status; admins can update any
+- Renters can cancel their bookings before start if pending/confirmed; admins can cancel any
+- Admin can view/manage all bookings
 
 ---
 
@@ -384,3 +471,4 @@ curl -X GET http://localhost:8080/api/spots \
 3. Prices use BigDecimal with 2 decimal places
 4. All dates/times are in the server's timezone
 5. IDs are Long (BIGINT in database)
+6. Admin lists are paged (default size 20 with sorting defaults above)

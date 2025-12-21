@@ -14,9 +14,7 @@ public class EnvConfig {
                 .load();
 
         dotenv.entries().forEach(e ->
-                System.setProperty(e.getKey(), e.getValue())
+            System.setProperty(e.getKey(), e.getValue())
         );
-
-        System.out.println("DB_URL = " + System.getProperty("DB_URL"));
     }
 }
